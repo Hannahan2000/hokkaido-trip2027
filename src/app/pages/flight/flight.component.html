@@ -1,0 +1,88 @@
+<div class="space-y-6 pb-4 animate-fade-in">
+
+  <!-- 🛫 去程區塊 -->
+  <section>
+    <h2 class="text-blue-300 font-bold text-lg mb-3 flex items-center gap-2">
+      🛫 去程航班 <span class="text-xs text-slate-400 font-normal ml-2">真航空 Jin Air</span>
+    </h2>
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 space-y-2">
+
+      <ng-container *ngFor="let flight of outboundFlights; let i = index">
+        <!-- 單趟航班卡片 -->
+        <div class="bg-slate-50 rounded-md p-3 border border-slate-100">
+          <div class="text-xs text-slate-400 font-medium mb-2">{{ flight.date }} | 航班 {{ flight.flightNo }}</div>
+          <div class="flex justify-between items-center">
+            <!-- 起飛 -->
+            <div class="text-center w-24">
+              <p class="text-2xl font-bold text-slate-700">{{ flight.depTime }}</p>
+              <p class="text-xs text-slate-500 mt-1">{{ flight.depAirport }}</p>
+              <p class="text-[10px] text-slate-400">{{ flight.depTerminal }}</p>
+            </div>
+            <!-- 飛行箭頭 -->
+            <div class="flex-1 flex flex-col items-center justify-center relative px-2">
+              <div class="w-full h-px bg-blue-200"></div>
+              <span class="absolute text-blue-400 bg-slate-50 px-1 text-xs -mt-[10px]">✈️</span>
+            </div>
+            <!-- 抵達 -->
+            <div class="text-center w-24">
+              <p class="text-2xl font-bold text-slate-700">{{ flight.arrTime }}</p>
+              <p class="text-xs text-slate-500 mt-1">{{ flight.arrAirport }}</p>
+              <p class="text-[10px] text-slate-400">{{ flight.arrTerminal }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 轉機分隔線 (若不是最後一段航程則顯示) -->
+        <div *ngIf="i < outboundFlights.length - 1" class="flex flex-col items-center justify-center py-1">
+          <div class="h-4 border-l-2 border-dashed border-slate-300"></div>
+          <span class="text-xs text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm z-10">
+            釜山轉機
+          </span>
+          <div class="h-4 border-l-2 border-dashed border-slate-300"></div>
+        </div>
+      </ng-container>
+
+    </div>
+  </section>
+
+  <!-- 🛬 回程區塊 -->
+  <section>
+    <h2 class="text-blue-300 font-bold text-lg mb-3 flex items-center gap-2">
+      🛬 回程航班 <span class="text-xs text-slate-400 font-normal ml-2">真航空 Jin Air</span>
+    </h2>
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 space-y-2">
+
+      <ng-container *ngFor="let flight of inboundFlights; let i = index">
+        <div class="bg-slate-50 rounded-md p-3 border border-slate-100">
+          <div class="text-xs text-slate-400 font-medium mb-2">{{ flight.date }} | 航班 {{ flight.flightNo }}</div>
+          <div class="flex justify-between items-center">
+            <div class="text-center w-24">
+              <p class="text-2xl font-bold text-slate-700">{{ flight.depTime }}</p>
+              <p class="text-xs text-slate-500 mt-1">{{ flight.depAirport }}</p>
+              <p class="text-[10px] text-slate-400">{{ flight.depTerminal }}</p>
+            </div>
+            <div class="flex-1 flex flex-col items-center justify-center relative px-2">
+              <div class="w-full h-px bg-blue-200"></div>
+              <span class="absolute text-blue-400 bg-slate-50 px-1 text-xs -mt-[10px]">✈️</span>
+            </div>
+            <div class="text-center w-24">
+              <p class="text-2xl font-bold text-slate-700">{{ flight.arrTime }}</p>
+              <p class="text-xs text-slate-500 mt-1">{{ flight.arrAirport }}</p>
+              <p class="text-[10px] text-slate-400">{{ flight.arrTerminal }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="i < inboundFlights.length - 1" class="flex flex-col items-center justify-center py-1">
+          <div class="h-4 border-l-2 border-dashed border-slate-300"></div>
+          <span class="text-xs text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm z-10">
+            釜山轉機
+          </span>
+          <div class="h-4 border-l-2 border-dashed border-slate-300"></div>
+        </div>
+      </ng-container>
+
+    </div>
+  </section>
+
+</div>

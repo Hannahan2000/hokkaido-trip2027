@@ -1,0 +1,51 @@
+<div class="space-y-5 pb-32 animate-fade-in relative">
+
+  <!-- 標題 -->
+  <h2 class="text-blue-500 font-bold text-lg flex items-center gap-2">
+    📝 隨手筆記
+  </h2>
+
+  <!-- 新增筆記輸入區 -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
+    <textarea
+      #memoInput
+      rows="3"
+      placeholder="記下花費、代購清單或是任何靈感..."
+      class="w-full bg-slate-50 border border-slate-200 rounded-md p-3 text-slate-700 text-sm placeholder:text-slate-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all resize-none"></textarea>
+
+    <div class="flex justify-end mt-3">
+      <button
+        (click)="addMemo(memoInput)"
+        class="bg-blue-500 text-white px-6 py-2 rounded-md text-sm font-bold shadow-md hover:bg-blue-600 active:scale-95 transition-all">
+        儲存
+      </button>
+    </div>
+  </div>
+
+  <!-- 筆記列表 -->
+  <div class="space-y-3">
+    <!-- 空狀態提示 -->
+    <div *ngIf="memos.length === 0" class="text-center text-slate-400 text-sm py-8">
+      目前還沒有任何筆記哦！
+    </div>
+
+    <!-- 筆記卡片 -->
+    <div *ngFor="let memo of memos" class="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
+      <!-- 支援多行顯示 (whitespace-pre-wrap) -->
+      <p class="text-slate-700 text-sm whitespace-pre-wrap leading-relaxed mb-3">{{ memo.text }}</p>
+
+      <!-- 底部時間與刪除按鈕 -->
+      <div class="flex justify-between items-end mt-2 pt-2 border-t border-slate-50">
+        <span class="text-[10px] text-slate-400 tracking-wider">{{ memo.date }}</span>
+
+        <!-- 垃圾桶圖示 -->
+        <button (click)="deleteMemo(memo.id)" class="text-slate-300 hover:text-red-400 active:scale-90 transition-transform p-1 -mr-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

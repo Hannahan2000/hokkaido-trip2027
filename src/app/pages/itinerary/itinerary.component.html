@@ -1,0 +1,154 @@
+<!-- 最外層容器：設定 overflow-hidden 防止出現雙層捲軸 -->
+<div class="h-screen flex flex-col pt-2 animate-fade-in relative overflow-hidden">
+
+  <!-- 1. 水平滑動的日期選擇器 -->
+  <div class="flex overflow-x-auto no-scrollbar gap-3 px-4 py-3 shrink-0">
+    <button *ngFor="let day of days"
+            (click)="selectDay(day.dayId)"
+            class="flex flex-col items-center min-w-[72px] py-2.5 rounded-xl transition-all border"
+            [ngClass]="selectedDayId === day.dayId ? 'bg-blue-500 text-white border-blue-500 shadow-md scale-105' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'">
+      <span class="text-[10px] font-medium opacity-80">{{ day.date }}</span>
+      <span class="text-sm font-bold mt-0.5">Day {{ day.dayId }}</span>
+    </button>
+  </div>
+
+  <!-- 2. 行程時間軸區塊 (獨立滾動區域) -->
+  <div class="flex-1 overflow-y-auto px-4 pt-4 pb-32">
+
+    <h3 class="text-slate-800 font-bold text-lg mb-5 flex items-center justify-between">
+      <span>🗓️ {{ currentDay?.title }}</span>
+      <button (click)="addActivity()" class="text-xs bg-blue-100 text-blue-600 px-3 py-1.5 rounded-full font-bold active:scale-95 transition-transform">＋ 新增</button>
+    </h3>
+
+    <!-- 加上 cdkDropList 與拖曳完成的事件綁定 -->
+    <div class="space-y-0" cdkDropList (cdkDropListDropped)="drop($event)">
+
+      <!-- 加上 cdkDrag -->
+      <div *ngFor="let act of currentDay?.activities; let i = index" cdkDrag class="flex gap-3 group">
+
+        <!-- 左側：時間軸與圓點 -->
+        <div class="flex flex-col items-center w-6 shrink-0">
+          <div class="w-4 h-4 mt-1.5 rounded-full bg-blue-500 border-[3px] border-white shadow-sm shrink-0"></div>
+          <div *ngIf="i !== currentDay!.activities.length - 1" class="w-0.5 bg-blue-100 flex-1 my-1"></div>
+        </div>
+
+        <!-- 右側：行程卡片與交通資訊 -->
+        <div class="flex-1 pb-4 relative">
+
+          <div (click)="editActivity(act)" class="bg-white rounded-xl p-3.5 shadow-sm border border-slate-100 active:scale-[0.98] transition-transform cursor-pointer hover:shadow-md pr-10">
+            <div class="flex justify-between items-start mb-2">
+              <span class="text-blue-600 font-bold text-xs bg-blue-50 px-2 py-1 rounded-md">{{ act.time }}</span>
+              <span class="text-lg">{{ getIcon(act.type) }}</span>
+            </div>
+
+            <h4 class="font-bold text-slate-800 text-base leading-tight">{{ act.title }}</h4>
+
+            <div *ngIf="act.location || act.note" class="text-xs text-slate-500 mt-2 space-y-1.5 bg-slate-50 p-2 rounded-lg">
+              <p *ngIf="act.location" class="flex gap-1.5 items-start"><span class="shrink-0">📍</span> <span>{{ act.location }}</span></p>
+              <p *ngIf="act.note" class="flex gap-1.5 items-start"><span class="shrink-0">💡</span> <span>{{ act.note }}</span></p>
+            </div>
+          </div>
+
+          <!-- 拖曳把手 (cdkDragHandle)：獨立放在卡片右側，只抓這裡才能拖曳 -->
+          <div cdkDragHandle class="absolute right-2 top-2 p-3 text-slate-300 hover:text-blue-500 active:text-blue-600 active:cursor-grabbing cursor-grab transition-colors" (click)="$event.stopPropagation()">
+            <!-- 漢堡選單小圖示代表可拖曳 -->
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path>
+            </svg>
+          </div>
+
+          <div *ngIf="act.transit && i !== currentDay!.activities.length - 1" class="text-xs text-slate-400 mt-3 flex items-center gap-2 font-medium pl-2">
+            <span class="text-[10px]">🔻</span> {{ act.transit }}
+          </div>
+        </div>
+
+        <!-- 拖曳時的視覺佔位符 (讓排版不會在拖曳時崩塌) -->
+        <div *cdkDragPlaceholder class="opacity-30 border-2 border-dashed border-blue-400 rounded-xl bg-blue-50"></div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================== -->
+<!-- ⬇️ 編輯 / 詳細資訊 Bottom Sheet ⬇️ -->
+<!-- ============================================== -->
+
+<div *ngIf="editingAct"
+     class="fixed inset-0 bg-black/40 z-[60] transition-opacity"
+     (click)="closeSheet()">
+</div>
+
+<div *ngIf="editingAct"
+     class="fixed bottom-0 left-0 w-full bg-slate-50 rounded-t-3xl z-[70] shadow-2xl flex flex-col max-h-[90vh]">
+
+  <div class="w-full shrink-0 flex justify-center pt-4 pb-2" (click)="closeSheet()">
+    <div class="w-12 h-1.5 bg-slate-300 rounded-full"></div>
+  </div>
+
+  <div class="flex-1 overflow-y-auto px-6 pb-24">
+    <div class="flex justify-between items-center mb-6 mt-2">
+      <h3 class="font-bold text-xl text-slate-800">{{ isNew ? '新增行程' : '編輯行程' }}</h3>
+      <button *ngIf="!isNew" (click)="deleteActivity()" class="text-slate-500 hover:text-red-400 active:scale-90 transition-transform p-1 -mr-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+          </svg>
+        </button>
+    </div>
+
+    <!-- 簡易表單：統一加入 bg-white, border-slate-200, p-3, rounded-xl -->
+    <div class="space-y-4 pb-8">
+
+      <div class="flex gap-4">
+        <div class="flex-1">
+          <label class="text-xs text-slate-500 font-bold mb-1.5 block">時間</label>
+          <input type="time" [value]="editingAct.time" (input)="editingAct.time = $any($event.target).value" class="w-full p-3 rounded-xl border border-slate-200 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition-all text-sm">
+        </div>
+        <div class="flex-1">
+          <label class="text-xs text-slate-500 font-bold mb-1.5 block">類別</label>
+          <select [value]="editingAct.type" (change)="editingAct.type = $any($event.target).value" class="w-full p-3 rounded-xl border border-slate-200 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition-all text-sm">
+            <option value="spot">📍 景點</option>
+            <option value="food">🍽️ 餐飲</option>
+            <option value="transport">🚆 交通</option>
+            <option value="hotel">🏨 住宿</option>
+            <option value="flight">✈️ 飛機</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="text-xs text-slate-500 font-bold mb-1.5 block">標題 (必填)</label>
+        <input type="text" [value]="editingAct.title" (input)="editingAct.title = $any($event.target).value" placeholder="例如：小樽運河" class="w-full p-3 rounded-xl border border-slate-200 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition-all text-sm">
+      </div>
+
+      <div>
+        <label class="text-xs text-slate-500 font-bold mb-1.5 block">地點 / 地標</label>
+        <input type="text" [value]="editingAct.location || ''" (input)="editingAct.location = $any($event.target).value" placeholder="例如：札幌車站" class="w-full p-3 rounded-xl border border-slate-200 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition-all text-sm">
+      </div>
+
+      <div>
+        <label class="text-xs text-slate-500 font-bold mb-1.5 block">前往下一站的交通 (Transit)</label>
+        <input type="text" [value]="editingAct.transit || ''" (input)="editingAct.transit = $any($event.target).value" placeholder="例如：步行 5 分鐘轉乘 JR" class="w-full p-3 rounded-xl border border-slate-200 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition-all text-sm">
+      </div>
+
+      <div>
+        <label class="text-xs text-slate-500 font-bold mb-1.5 block">Google Maps 網址</label>
+        <input type="url" [value]="editingAct.mapUrl || ''" (input)="editingAct.mapUrl = $any($event.target).value" placeholder="貼上 Google Maps 連結" class="w-full p-3 rounded-xl border border-slate-200 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition-all text-sm">
+      </div>
+
+      <div>
+        <label class="text-xs text-slate-500 font-bold mb-1.5 block">備註</label>
+        <textarea rows="3" [value]="editingAct.note || ''" (input)="editingAct.note = $any($event.target).value" class="w-full p-3 rounded-xl border border-slate-200 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition-all resize-none text-sm"></textarea>
+      </div>
+
+      <button (click)="saveActivity()" class="w-full mt-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all">
+        儲存行程
+      </button>
+
+      <a *ngIf="!isNew && editingAct.mapUrl" [href]="editingAct.mapUrl" target="_blank" class="block w-full mt-3 bg-white hover:bg-slate-50 text-blue-500 border border-blue-200 font-bold py-3.5 rounded-xl shadow-sm text-center active:scale-[0.98] transition-all">
+        🗺️ 開啟導航
+      </a>
+
+    </div>
+  </div>
+</div>
