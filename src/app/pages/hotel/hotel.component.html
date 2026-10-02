@@ -40,7 +40,7 @@
      [ngClass]="{'translate-y-0': isSheetOpen, 'translate-y-full': !isSheetOpen}">
 
   <!-- 頂部防滑把手 -->
-  <div class="w-full shrink-0 flex justify-center pt-4 pb-3" (click)="closeDetail()">
+  <div class="w-full shrink-0 flex justify-center pt-4 pb-3" (click)="closeDetail()" (touchstart)="onTouchStart($event)" (touchend)="onTouchEnd($event)">
     <div class="w-12 h-1.5 bg-slate-200 rounded-full"></div>
   </div>
 

@@ -73,6 +73,7 @@ export class HotelComponent {
 
   selectedHotel: Hotel | null = null;
   isSheetOpen = false;
+  touchStartY = 0;
 
   constructor(private sanitizer: DomSanitizer) {}
 
@@ -90,10 +91,27 @@ export class HotelComponent {
     }, 10);
   }
 
-  // 關閉飯店詳細面板
-  closeDetail() {
+// 2. 加入手指剛碰到螢幕的事件
+  onTouchStart(event: TouchEvent): void {
+    this.touchStartY = event.changedTouches[0].screenY;
+  }
+
+  // 3. 加入手指離開螢幕的計算事件
+  onTouchEnd(event: TouchEvent): void {
+    const touchEndY = event.changedTouches[0].screenY;
+    const swipeDistance = touchEndY - this.touchStartY;
+
+    // 如果向下滑動超過 50px，就觸發你的關閉函式
+    if (swipeDistance > 50) {
+      this.closeDetail();
+    }
+  }
+
+  // 4. 確保你原本的關閉函式會把 isSheetOpen 設為 false
+  closeDetail(): void {
     this.isSheetOpen = false;
-    // 等 CSS 退場動畫跑完再清空資料 (300ms)
+
+    // 記得要等待動畫 (300ms) 跑完，再把資料清空，這樣才會有平滑下降的過場
     setTimeout(() => {
       this.selectedHotel = null;
     }, 300);

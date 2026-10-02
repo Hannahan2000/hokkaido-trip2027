@@ -32,6 +32,10 @@ export class ItineraryComponent implements OnInit {
   isSheetOpen = false;
   editingAct: Partial<Activity> | null = null;
   isNew = false;
+  isClosing = false;
+  private touchStartY = 0;
+  // 新增這個變數來專門控制動畫
+  isSheetAnimating = false;
 
   ngOnInit() {
     this.loadData();
@@ -85,6 +89,9 @@ export class ItineraryComponent implements OnInit {
       mapUrl: ''
     };
     this.isSheetOpen = true;
+    setTimeout(() => {
+      this.isSheetAnimating = true;
+    }, 10);
   }
 
   // 打開面板 (編輯/查看細節)
@@ -92,6 +99,9 @@ export class ItineraryComponent implements OnInit {
     this.isNew = false;
     this.editingAct = { ...act }; // 複製一份出來編輯
     this.isSheetOpen = true;
+    setTimeout(() => {
+      this.isSheetAnimating = true;
+    }, 10);
   }
 
   // 儲存行程
@@ -123,9 +133,37 @@ export class ItineraryComponent implements OnInit {
     }
   }
 
-  closeSheet() {
-    this.isSheetOpen = false;
-    setTimeout(() => this.editingAct = null, 300);
+  // 🔴 1. 找到你原本用來「打開」編輯視窗的 Function (可能是 editActivity 或 openSheet)
+  openEditModal(activity: any): void {
+    this.editingAct = activity; // 第一步：先把資料塞進去，讓 *ngIf 把 HTML 節點產生出來
+
+    // 第二步：延遲 10 毫秒（等待畫面渲染），再觸發「往上滑」的動畫
+    setTimeout(() => {
+      this.isSheetAnimating = true;
+    }, 10);
+  }
+
+  // 🔴 2. 修改你剛剛寫的關閉 Function
+  closeSheet(): void {
+    this.isSheetAnimating = false; // 第一步：變更狀態，觸發「往下滑」的動畫
+
+    // 第二步：等待 300 毫秒（等 Tailwind 動畫播完），再真正把資料清空、拔除 HTML
+    setTimeout(() => {
+      this.editingAct = null;
+    }, 300);
+  }
+
+  onTouchStart(event: TouchEvent): void {
+    this.touchStartY = event.changedTouches[0].screenY;
+  }
+
+  // 🔴 3. 確保向下滑動關閉的邏輯也是呼叫 closeSheet()
+  onTouchEnd(event: TouchEvent): void {
+    const touchEndY = event.changedTouches[0].screenY;
+    const swipeDistance = touchEndY - this.touchStartY;
+    if (swipeDistance > 50) {
+      this.closeSheet();
+    }
   }
 
   // 自動轉換類別為圖示

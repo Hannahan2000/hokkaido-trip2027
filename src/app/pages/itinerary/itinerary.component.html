@@ -74,15 +74,23 @@
 <!-- ⬇️ 編輯 / 詳細資訊 Bottom Sheet ⬇️ -->
 <!-- ============================================== -->
 
+<!-- 1. 背景黑色半透明遮罩 (點擊背景也能關閉) -->
 <div *ngIf="editingAct"
-     class="fixed inset-0 bg-black/40 z-[60] transition-opacity"
+     class="fixed inset-0 bg-black/40 z-[60] transition-opacity duration-300"
+     [ngClass]="isSheetAnimating ? 'opacity-100' : 'opacity-0'"
      (click)="closeSheet()">
 </div>
 
+<!-- 2. 底部詳細頁區塊 (注意 ngClass 裡面的邏輯顛倒過來了) -->
 <div *ngIf="editingAct"
-     class="fixed bottom-0 left-0 w-full bg-slate-50 rounded-t-3xl z-[70] shadow-2xl flex flex-col max-h-[90vh]">
+     [ngClass]="isSheetAnimating ? 'translate-y-0' : 'translate-y-full'"
+     class="fixed bottom-0 left-0 w-full bg-slate-50 rounded-t-3xl z-[70] shadow-2xl flex flex-col max-h-[90vh] transition-transform duration-300 ease-out">
 
-  <div class="w-full shrink-0 flex justify-center pt-4 pb-2" (click)="closeSheet()">
+  <!-- 頂部把手區塊 (保持你原本綁定的滑動事件) -->
+  <div class="w-full shrink-0 flex justify-center pt-4 pb-2"
+       (click)="closeSheet()"
+       (touchstart)="onTouchStart($event)"
+       (touchend)="onTouchEnd($event)">
     <div class="w-12 h-1.5 bg-slate-300 rounded-full"></div>
   </div>
 
@@ -100,12 +108,12 @@
     <div class="space-y-4 pb-8">
 
       <div class="flex gap-4">
-        <div class="flex-1">
-          <label class="text-xs text-slate-500 font-bold mb-1.5 block">時間</label>
+        <div class="flex-1 min-w-0">
+          <label class="text-xs text-slate-500 font-bold mb-1.5 block truncate">時間</label>
           <input type="time" [value]="editingAct.time" (input)="editingAct.time = $any($event.target).value" class="w-full p-3 rounded-xl border border-slate-200 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition-all text-sm">
         </div>
-        <div class="flex-1">
-          <label class="text-xs text-slate-500 font-bold mb-1.5 block">類別</label>
+        <div class="flex-1 min-w-0">
+          <label class="text-xs text-slate-500 font-bold mb-1.5 block truncate">類別</label>
           <select [value]="editingAct.type" (change)="editingAct.type = $any($event.target).value" class="w-full p-3 rounded-xl border border-slate-200 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition-all text-sm">
             <option value="spot">📍 景點</option>
             <option value="food">🍽️ 餐飲</option>
