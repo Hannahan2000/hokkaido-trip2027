@@ -1,0 +1,52 @@
+<div class="h-screen flex flex-col bg-slate-50 text-slate-800 overscroll-none overflow-hidden relative">
+
+  <!-- 1. 開場全螢幕 Splash (獨立覆蓋層) -->
+  <!-- 修正：用獨立的 absolute 層做淡出與上滑，避免 Flexbox 瞬間排版跳動 -->
+  <div class="fixed inset-0 w-full h-full z-[100] flex items-center justify-center bg-blue-400 text-white transition-all duration-[800ms] ease-in-out"
+       [ngClass]="{
+         'opacity-100 translate-y-0': isSplash,
+         'opacity-0 -translate-y-10 scale-95 pointer-events-none': !isSplash
+       }">
+    <h1 class="text-3xl font-bold tracking-wider drop-shadow-md animate-fade-in text-center">
+      ❄️ Hokkaido 2027 ❄️
+    </h1>
+  </div>
+
+  <!-- 2. 真正的頂部 Header -->
+  <!-- 修正：配合 Splash 淡出時，它同時從稍微偏上方淡入 -->
+  <header class="shrink-0 bg-white shadow-sm flex items-center h-14 px-4 pt-safe z-10 transition-all duration-[800ms] ease-in-out"
+          [ngClass]="{
+            'opacity-0 -translate-y-4': isSplash,
+            'opacity-100 translate-y-0': !isSplash
+          }">
+    <h1 class="text-blue-400 font-bold text-lg tracking-wider">
+      ❄️ Hokkaido 2027 ❄️
+    </h1>
+  </header>
+
+  <!-- 3. 內容區 -->
+  <main class="flex-1 overflow-y-auto p-4 pb-24 touch-pan-y transition-opacity duration-700 delay-200"
+        [ngClass]="{
+          'opacity-0': isSplash,
+          'opacity-100': !isSplash
+        }">
+    <router-outlet></router-outlet>
+  </main>
+
+  <!-- 4. 底部導覽列 -->
+  <!-- 修正：採用 cubic-bezier 讓彈出的曲線更 Q 彈順滑 -->
+  <nav class="fixed bottom-0 w-full bg-blue-400 text-white border-t border-blue-300 pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-50 transition-transform duration-[800ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+       [ngClass]="{
+         'translate-y-full': isSplash,
+         'translate-y-0': !isSplash
+       }">
+    <div class="flex justify-around items-center h-16 px-2 text-sm font-medium whitespace-nowrap">
+      <a routerLink="/flight" routerLinkActive="active-tab" class="nav-item">航班✈️</a>
+      <a routerLink="/hotel" routerLinkActive="active-tab" class="nav-item">飯店🏨</a>
+      <a routerLink="/itinerary" routerLinkActive="active-tab" class="nav-item">行程🗓️</a>
+      <a routerLink="/checklist" routerLinkActive="active-tab" class="nav-item">物品☑️</a>
+      <a routerLink="/memo" routerLinkActive="active-tab" class="nav-item">備忘錄📝</a>
+    </div>
+  </nav>
+
+</div>
