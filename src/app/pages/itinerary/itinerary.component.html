@@ -8,7 +8,7 @@
             class="flex flex-col items-center min-w-[72px] py-2.5 rounded-xl transition-all border"
             [ngClass]="selectedDayId === day.dayId ? 'bg-blue-500 text-white border-blue-500 shadow-md scale-105' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'">
       <span class="text-[10px] font-medium opacity-80">{{ day.date }}</span>
-      <span class="text-sm font-bold mt-0.5">Day {{ day.dayId }}</span>
+      <span class="text-sm font-bold mt-0.5">{{ isNumber(day.dayId) ? 'Day ' : '' }}{{ day.dayId }}</span>
     </button>
   </div>
 
@@ -107,21 +107,25 @@
     <!-- 簡易表單：統一加入 bg-white, border-slate-200, p-3, rounded-xl -->
     <div class="space-y-4 pb-8">
 
-      <div class="flex gap-4">
-        <div class="flex-1 min-w-0">
-          <label class="text-xs text-slate-500 font-bold mb-1.5 block truncate">時間</label>
-          <input type="time" [value]="editingAct.time" (input)="editingAct.time = $any($event.target).value" class="w-full p-3 rounded-xl border border-slate-200 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition-all text-sm">
-        </div>
-        <div class="flex-1 min-w-0">
-          <label class="text-xs text-slate-500 font-bold mb-1.5 block truncate">類別</label>
-          <select [value]="editingAct.type" (change)="editingAct.type = $any($event.target).value" class="w-full p-3 rounded-xl border border-slate-200 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition-all text-sm">
-            <option value="spot">📍 景點</option>
-            <option value="food">🍽️ 餐飲</option>
-            <option value="transport">🚆 交通</option>
-            <option value="hotel">🏨 住宿</option>
-            <option value="flight">✈️ 飛機</option>
-          </select>
-        </div>
+<div>
+  <label class="text-xs text-slate-500 font-bold mb-1.5 block">時間</label>
+  <input type="time"
+         [value]="editingAct.time"
+         (input)="editingAct.time = $any($event.target).value"
+         class="w-full p-3 rounded-xl border border-slate-200 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition-all text-sm appearance-none">
+</div>
+
+      <div>
+        <label class="text-xs text-slate-500 font-bold mb-1.5 block">類別</label>
+        <select [value]="editingAct.type"
+                (change)="editingAct.type = $any($event.target).value"
+                class="w-full p-3 rounded-xl border border-slate-200 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition-all text-sm">
+          <option value="spot">📍 景點</option>
+          <option value="food">🍽️ 餐飲</option>
+          <option value="transport">🚆 交通</option>
+          <option value="hotel">🏨 住宿</option>
+          <option value="flight">✈️ 飛機</option>
+        </select>
       </div>
 
       <div>

@@ -24,6 +24,56 @@
 
   <!-- 筆記列表 -->
   <div class="space-y-3">
+    <!-- 🌟 釘選筆記：狸小路逛街攻略 (固定顯示) -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 relative overflow-hidden">
+      <!-- 左側裝飾邊線 -->
+      <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-500"></div>
+
+      <div class="flex justify-between items-start mb-3 pl-2">
+        <h3 class="font-bold text-slate-800 text-base flex items-center gap-1.5">
+          <span class="text-lg">🛍️</span> 札幌狸小路逛街攻略
+        </h3>
+        <span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold">📌 釘選</span>
+      </div>
+
+      <div class="space-y-4 text-sm text-slate-600 pl-2">
+        <!-- 逛街分區 -->
+        <div>
+          <h4 class="font-bold text-slate-700 mb-2 flex items-center gap-1">
+            <span class="text-blue-500">📍</span> 逛街順序與分區
+          </h4>
+
+          <!-- 圖片區塊：請將截圖存成 tanukikoji.png 放到 src/assets/ 裡 -->
+          <img src="assets/img/shop1.jpg" alt="狸小路攻略圖" class="w-full h-auto rounded-lg mb-3 object-cover border border-slate-100">
+
+          <ul class="list-disc pl-5 space-y-1.5">
+            <li><span class="font-semibold text-slate-700">趕時間：</span>先衝 <b class="text-blue-600">5 丁目</b>（藥妝），再往 <b class="text-blue-600">4 丁目</b>（唐吉訶德、Uniqlo、大創）。</li>
+            <li><span class="font-semibold text-slate-700">親子或雨天：</span>可加碼 <b class="text-blue-600">3 丁目</b>（AOAO 水族館）。</li>
+            <li><span class="font-semibold text-slate-700">覓食找宵夜：</span>直接往 <b class="text-blue-600">6-7 丁目</b>（居酒屋、拉麵、深夜甜點）。</li>
+          </ul>
+        </div>
+
+        <!-- 採購秘訣 -->
+        <div class="bg-blue-50 rounded-lg p-3 border border-blue-100">
+          <h4 class="font-bold text-blue-800 mb-1 flex items-center gap-1">
+            <span>💡</span> 唐吉訶德採購秘訣
+          </h4>
+          <p class="leading-relaxed text-slate-700">
+            狸小路「本店」常缺貨，建議去<b class="text-blue-700">旁邊兩間的唐吉訶德分店</b>貨較齊！可尋找熱門美髮神物「京喚羽 (TOKIO)」。
+          </p>
+        </div>
+
+        <!-- 避雷專區 -->
+        <div class="bg-red-50 rounded-lg p-3 border border-red-100">
+          <h4 class="font-bold text-red-700 mb-1 flex items-center gap-1">
+            <span>⚠️</span> 絕對避雷店舖
+          </h4>
+          <p class="leading-relaxed text-red-600">
+            千萬別去 5 丁目 <b class="font-bold bg-red-100 px-1 rounded">「店面小小的大國藥妝」</b>！Google 評價極低，導遊也明確不建議。
+          </p>
+        </div>
+      </div>
+    </div>
     <!-- 空狀態提示 -->
     <div *ngIf="memos.length === 0" class="text-center text-slate-400 text-sm py-8">
       目前還沒有任何筆記哦！

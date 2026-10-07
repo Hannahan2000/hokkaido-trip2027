@@ -5,8 +5,10 @@
     "ng": "ng",
     "start": "ng serve --port 4201",
     "build": "ng build",
+    "build_publish": "ng build --base-href=/hokkaido-trip2027/",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "test_on_phone": "npx angular-cli-ghpages --dir=dist/hokkaido-trip"
   },
   "private": true,
   "dependencies": {
