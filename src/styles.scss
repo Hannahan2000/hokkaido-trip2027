@@ -4,6 +4,16 @@
 @tailwind utilities;
 
 /* 確保全域套用你想要的字體與背景色 */
+html, body {
+  /* 關閉上下滑動到底時的橡皮筋回彈與下拉重整 */
+  overscroll-behavior-y: none;
+
+  /* 確保高度固定，防止整個網頁被拖動 */
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
 body {
   @apply bg-slate-50 text-slate-800;
   font-family: "Noto Sans CJK TC", "Noto Sans TC", "Noto Sans", "思源黑體", "微軟正黑體", "Arial", sans-serif;
