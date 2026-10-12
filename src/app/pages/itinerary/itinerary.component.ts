@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 
 export interface Activity {
@@ -17,6 +18,8 @@ export interface DayPlan {
   date: string;
   title: string;
   activities: Activity[];
+  areaSummary?: string; // 今日動線摘要 (方案 2)
+  mapQuery?: string;    // 今日地圖搜尋中心/關鍵字 (方案 1)
 }
 
 @Component({
@@ -28,6 +31,9 @@ export class ItineraryComponent implements OnInit {
   selectedDayId: number | string = 1;
   days: DayPlan[] = [];
 
+  // 地圖展開狀態 (方案 1)
+  isMapExpanded = false;
+
   // 編輯面板狀態
   isSheetOpen = false;
   editingAct: Partial<Activity> | null = null;
@@ -37,6 +43,8 @@ export class ItineraryComponent implements OnInit {
   // 新增這個變數來專門控制動畫
   isSheetAnimating = false;
 
+  constructor(private sanitizer: DomSanitizer) {}
+
   ngOnInit() {
     this.loadData();
   }
@@ -45,14 +53,68 @@ export class ItineraryComponent implements OnInit {
     return typeof val === 'number';
   }
 
-  // 讀取資料 (若無存檔，則載入預設 9 天骨架)
+  // 切換地圖顯示/收合
+  toggleMap() {
+    this.isMapExpanded = !this.isMapExpanded;
+  }
+
+  // 取得當前日期的 Google Maps 嵌入網址 (方案 1)
+  get currentMapEmbedUrl(): SafeResourceUrl {
+    const day = this.currentDay;
+    if (!day) return this.sanitizer.bypassSecurityTrustResourceUrl('about:blank');
+    const query = day.mapQuery || (day.activities.find(a => a.location)?.location || day.title);
+    const url = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=&z=12&ie=UTF8&iwloc=&output=embed`;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+
+  // 取得當前日期的 Google Maps 多點導航/路線規劃網址 (方案 2)
+  get currentGoogleMapsRouteUrl(): string {
+    const day = this.currentDay;
+    if (!day || !day.activities || day.activities.length === 0) return '';
+    const validStops = day.activities
+      .map(a => a.location ? `${a.location} ${a.title}` : a.title)
+      .filter(name => !name.includes('退房') && !name.includes('休息') && !name.includes('自由活動') && !name.includes('備案'));
+
+    if (validStops.length === 0) return '';
+    if (validStops.length === 1) {
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(validStops[0])}`;
+    }
+
+    const origin = encodeURIComponent(validStops[0]);
+    const destination = encodeURIComponent(validStops[validStops.length - 1]);
+    const waypoints = validStops.slice(1, -1).slice(0, 8).map(s => encodeURIComponent(s)).join('|');
+    return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${waypoints ? '&waypoints=' + waypoints : ''}`;
+  }
+
+  // 讀取資料 (若無存檔，則載入預設 9 天骨架；若有存檔，補齊動線與地圖欄位)
   loadData() {
     const saved = localStorage.getItem('hokkaido_itinerary');
+    const defaultDays = this.generateDefault9Days();
     if (saved) {
-      this.days = JSON.parse(saved);
+      const parsedDays: DayPlan[] = JSON.parse(saved);
+      this.days = parsedDays.map(d => {
+        const def = defaultDays.find(x => x.dayId === d.dayId);
+        return {
+          ...def,
+          ...d,
+          areaSummary: d.areaSummary || def?.areaSummary,
+          mapQuery: d.mapQuery || def?.mapQuery
+        };
+      });
     } else {
+      this.days = defaultDays;
+      this.saveData();
+    }
+  }
+
+  // 還原預設行程
+  resetToDefault() {
+    const isConfirm = confirm('確定要還原成預設行程嗎？\n這將會清除您所有的自訂修改與拖曳排序！');
+    if (isConfirm) {
+      localStorage.removeItem('hokkaido_itinerary');
       this.days = this.generateDefault9Days();
       this.saveData();
+      alert('已成功還原預設行程！');
     }
   }
 
@@ -181,6 +243,8 @@ export class ItineraryComponent implements OnInit {
     return [
       {
         dayId: 1, date: '03/05', title: '釜山快閃 ✈️ 抵達札幌',
+        areaSummary: '釜山 (西面/田浦) ✈️ 札幌市區 (薄野)',
+        mapQuery: '札幌市 中央區',
         activities: [
           { id: 98, time: '06:00', title: '抵達 釜山金海機場 (PUS)', type: 'flight', note: '看是否能寄放行李', transit: '搭車前往 西面站，地鐵約 40 分鐘' },
           { id: 100, time: '08:00', title: '早餐：秀英本家豬肉湯飯', location: '西面', type: 'food', note: '推薦加入蝦醬和韭菜提味', transit: '步行', mapUrl: 'https://maps.app.goo.gl/FjqZYNpdVijKxHVF9' },
@@ -198,10 +262,12 @@ export class ItineraryComponent implements OnInit {
       },
       {
         dayId: 2, date: '03/06', title: '小樽漫遊(魚市星期日休市注意)',
+        areaSummary: '札幌 🚆 小樽運河 ➔ 堺町通 ➔ 朝里海景',
+        mapQuery: '小樽運河',
         activities: [
-          { id: 201, time: '10:45', title: '搭乘 JR 前往小樽', type: 'transport', note: '去程坐右側看海。若花束太大，抵達小樽後可先鎖在車站置物櫃' },
-          { id: 202, time: '11:30', title: '午餐備案 1：鱗友朝市', type: 'food', note: '推薦中沖水產活帝王蟹，但需注意過中午可能收攤', mapUrl: 'https://maps.app.goo.gl/5eg9PLHi7W1TAkoa8' },
-          { id: 203, time: '11:30', title: '午餐備案 2：三角市場', type: 'food', note: '海鮮丼熱門選擇', mapUrl: 'https://maps.app.goo.gl/d2X7ykE2e5cxshe87' },
+          { id: 201, time: '09:00', title: '搭乘 JR 前往小樽', type: 'transport', note: '去程坐右側看海。若花束太大，抵達小樽後可先鎖在車站置物櫃' },
+          { id: 202, time: '10:00', title: '早午餐備案 1：鱗友朝市', type: 'food', note: '推薦中沖水產活帝王蟹，但需注意過中午可能收攤', mapUrl: 'https://maps.app.goo.gl/5eg9PLHi7W1TAkoa8' },
+          { id: 203, time: '11:30', title: '早午餐備案 2：三角市場', type: 'food', note: '海鮮丼熱門選擇', mapUrl: 'https://maps.app.goo.gl/d2X7ykE2e5cxshe87' },
           { id: 204, time: '13:00', title: '船見坂', type: 'spot', note: '順路步行上坡道遠眺海景', mapUrl: 'https://maps.app.goo.gl/mC6B6J7SKiJKsNXA6' },
           { id: 205, time: '14:00', title: '小樽運河散策', type: 'spot', note: '北海道最具代表性的景點之一', mapUrl: 'https://maps.app.goo.gl/s5HAzsV64KNMdKLx8' },
           { id: 20501, time: '14:00', title: '小樽可逛-MIFFY PORT TOWN 小樽店', type: 'spot', note: '', mapUrl: 'https://maps.app.goo.gl/x7xfs5ahYZ1vpkBq6' },
@@ -210,8 +276,8 @@ export class ItineraryComponent implements OnInit {
           { id: 20504, time: '14:00', title: '小樽可逛-LeTAO', type: 'spot', note: '', mapUrl: 'https://maps.app.goo.gl/MWNFYLpPyiEeKDQp7' },
           // { id: 20505, time: '14:00', title: '小樽可逛-MIFFY PORT TOWN 小樽店', type: 'spot', note: '', mapUrl: 'https://maps.app.goo.gl/x7xfs5ahYZ1vpkBq6' },
           { id: 206, time: '15:00', title: '堺町通商店街 / 北一硝子', type: 'spot', note: '推薦 LeTAO 與北菓樓甜點，多數店家傍晚打烊', mapUrl: 'https://maps.app.goo.gl/dRNG8HQEufT7xwGY6' },
-          { id: 207, time: '16:30', title: '小樽蒸汽鐘', type: 'spot', note: '每 15 分鐘噴出蒸汽，十字路口對面拍攝能將音樂盒堂完整同框', mapUrl: 'https://maps.app.goo.gl/rh22zkqY5pK1yvkH8' },
-          { id: 208, time: '17:15', title: '搭 JR 準備回程 (短暫停留朝里)', type: 'transport', note: '回程記得坐左側看夕陽海景' },
+          { id: 207, time: '16:00', title: '小樽蒸汽鐘', type: 'spot', note: '每 15 分鐘噴出蒸汽，十字路口對面拍攝能將音樂盒堂完整同框', mapUrl: 'https://maps.app.goo.gl/rh22zkqY5pK1yvkH8' },
+          { id: 208, time: '16:30', title: '搭 JR 準備回程 (短暫停留朝里)', type: 'transport', note: '回程記得坐左側看夕陽海景' },
           { id: 209, time: '17:30', title: '朝里站', type: 'spot', note: '絕美的日劇海景車站場景，拍完照搭下一班車回札幌', mapUrl: 'https://maps.app.goo.gl/DCdP6iV4AjPsGswS8' },
           { id: 210, time: '19:00', title: '晚餐備案1 ：焼き鳥りぶれ', location: '薄野店 (居酒屋)', type: 'food', note: '好吃居酒屋，記得先預約', mapUrl: 'https://maps.app.goo.gl/pcwYXsKGmYJhTD7o6' },
           { id: 210, time: '19:00', title: '晚餐備案2 ：やきとり おでん 然', location: '薄野店 (居酒屋)', type: 'food', note: '居酒屋', mapUrl: 'https://maps.app.goo.gl/mrAst6q7ArhbDSKE8' }
@@ -219,6 +285,8 @@ export class ItineraryComponent implements OnInit {
       },
       {
         dayId: 3, date: '03/07', title: '札幌市區',
+        areaSummary: '圓山公園 (北海道神宮) ➔ 大通公園 ➔ 時計台 ➔ 狸小路',
+        mapQuery: '大通公園 札幌',
         activities: [
           { id: 300, time: '10:00', title: '取花', type: 'spot', note: '' },
           { id: 301, time: '09:00', title: '早餐：Tully\'s Coffee', location: '札幌 STV 北2条店', type: 'food', note: '吧台設有充電插座，喝杯皇家奶茶充飽電再出發', mapUrl: 'https://maps.app.goo.gl/uwL8iXAqHAabXM239' },
@@ -238,6 +306,8 @@ export class ItineraryComponent implements OnInit {
       },
       {
         dayId: 4, date: '03/08', title: '前往洞爺湖',
+        areaSummary: '札幌出發 🚆 洞爺湖畔八景 🏨 湖之栖',
+        mapQuery: '洞爺湖',
         activities: [
           { id: 401, time: '09:00', title: '辦理退房手續', type: 'hotel', note: '從札幌飯店退房，確認行李' },
           { id: 402, time: '10:00', title: '搭乘北斗號特急前往洞爺', type: 'transport' },
@@ -251,6 +321,8 @@ export class ItineraryComponent implements OnInit {
       },
       {
         dayId: 5, date: '03/09', title: '洞爺湖出發 ➡️ 登別 ➡️ 札幌',
+        areaSummary: '洞爺湖 ➔ 登別地獄谷 ➔ 札幌市區大採購',
+        mapQuery: '登別地獄谷',
         activities: [
           { id: 501, time: '09:30', title: '飯店退房，前往 JR 洞爺站', type: 'hotel', note: '搭乘飯店接駁車或道南巴士前往 JR 車站。1.往登別再回市區/2.往市區' },
           { id: 502, time: '10:15', title: '--------登別備案----------搭乘 JR 特急北斗號 (往登別)', type: 'transport', transit: '車程約 40 分鐘' },
@@ -269,6 +341,8 @@ export class ItineraryComponent implements OnInit {
       },
       {
         dayId: 6,  date: '03/10',  title: '美瑛/富良野 (雪地自駕)方案',
+        areaSummary: '旭川 ➔ 美瑛白金青池 ➔ 聖誕樹 ➔ 上富良野',
+        mapQuery: '美瑛 白金青池',
         activities: [
           {  id: 601,  time: '10:00',  title: '男山酒造資料館 / 高砂酒造',  type: 'spot',  note: '擇一參觀，駕駛請以水或甘酒代步' },
           {  id: 602,  time: '11:45',  title: '旭川拉麵村/旭川當地美食',  type: 'food',  note: '午餐暖胃，吃飽再進入美瑛山區' },
@@ -276,12 +350,14 @@ export class ItineraryComponent implements OnInit {
           {  id: 604,  time: '15:00',  title: 'Kita Kouboh (北工房)',  type: 'food',  note: '自家烘焙咖啡，下午茶休息' },
           {  id: 605,  time: '16:15',  title: '聖誕樹 (Christmas Tree)',  type: 'spot',  note: '黃昏斜射光最美 ' },
           {  id: 606,  time: '17:00',  title: '上富良野 日之出公園',  type: 'spot',  note: '【彈性備案】看愛之鐘與雪白盆地。若天色太暗或太累可省略此點掉頭' },
-          {  id: 607,  time: '18:45',  title: '返回旭川市區',  type: 'transport',  note: '夜間雪地視線較差，請慢行。回市區吃成吉思汗烤肉！'
-          }
+          {  id: 607,  time: '18:45',  title: '返回旭川市區',  type: 'transport',  note: '夜間雪地視線較差！'},
+          {  id: 608, time: '19:30', title: '晚餐：迴轉壽司 トリトン (Toriton)', location: '北8条光星店', type: 'food', note: '抽號碼牌後可掃碼用 LINE 查看進度！推薦油脂豐富的鮭魚壽司', mapUrl: 'https://maps.app.goo.gl/XFEa9u5ahKQu9oQK8' },
         ]
       },
       {
         dayId: 7, date: '03/11', title: '手稻滑雪課程',
+        areaSummary: '薄野集合 🚌 手稻滑雪場 🚌 市區和牛壽喜燒',
+        mapQuery: '手稻滑雪場',
         activities: [
           { id: 701, time: '07:30', title: '早餐：便利商店', type: 'food', note: '買些輕食與飯糰，準備一整天滑雪的體力', transit: '步行前往集合點' },
           { id: 702, time: '08:00', title: '集合與裝備領取', location: 'Infinity City 薄野店', type: 'spot', note: '完成報到手續，並由工作人員協助領取 Arc’teryx 始祖鳥滑雪服及其他滑雪裝備', transit: '搭乘巴士約 1 小時 5 分鐘' },
@@ -293,11 +369,13 @@ export class ItineraryComponent implements OnInit {
         ]
       },
       {
-        dayId: 8, date: '03/12', title: '市區逛街採買 (彈性)',
+        dayId: 8, date: '03/12', title: '市區逛街採買or滑雪',
+        areaSummary: '薄野 (Donguri) ➔ 迴轉壽司 ➔ 札幌啤酒博物館/滑雪',
+        mapQuery: '札幌啤酒博物館',
         activities: [
           { id: 801, time: '08:00', title: '滑雪或自由活動', type: 'spot', note: '若決定連滑兩天雪，這天就直接上雪場！若留在市區則走以下行程' },
           { id: 802, time: '10:00', title: '早餐/點心：Donguri 麵包店', location: 'Cocono Susukino 店', type: 'food', note: '推薦必嚐起司玉米麵包、竹輪麵包，炸雞也很推薦' },
-          { id: 803, time: '11:30', title: '午餐：迴轉壽司 トリトン (Toriton)', location: '北8条光星店', type: 'food', note: '抽號碼牌後可掃碼用 LINE 查看進度！推薦油脂豐富的鮭魚壽司', mapUrl: 'https://maps.app.goo.gl/XFEa9u5ahKQu9oQK8' },
+          { id: 803, time: '11:30', title: '午餐待安排', location: '', type: 'food', note: '', mapUrl: '' },
           { id: 804, time: '14:30', title: '下午茶：Sorriso dell’ Orso', location: '義式雪糕店', type: 'food', note: '可以先試吃再挑選喜歡的口味，推薦品嚐香濃的焙茶口味' },
           { id: 805, time: '16:00', title: '札幌啤酒博物館', type: 'spot', note: '若時間充裕可前往參觀/喝手沖啤酒' },
           { id: 806, time: '19:00', title: '晚餐待找', location: '', type: 'food', note: '' }
@@ -305,6 +383,8 @@ export class ItineraryComponent implements OnInit {
       },
       {
         dayId: 9, date: '03/13', title: '市區回程',
+        areaSummary: '札幌市區最後採買 🚆 新千歲機場CTS ✈️ 返家',
+        mapQuery: '新千歲機場 CTS',
         activities: [
           { id: 901, time: '09:00', title: '最後市區採買', type: 'spot', note: '狸小路或札幌車站' },
           { id: 902, time: '12:00', title: '退房，前往新千歲機場', type: 'transport' },
@@ -314,6 +394,8 @@ export class ItineraryComponent implements OnInit {
       },
       {
         dayId: 'E plan', date: 'eat', title: '食物備案都先放這',
+        areaSummary: '札幌大通 / 薄野周邊精選咖啡甜點與咖哩',
+        mapQuery: '札幌 大通',
         activities: [
           { id: 1001, time: '09:00', title: 'Smooch cafe', type: 'food', note: '咖啡廳', mapUrl: 'https://maps.app.goo.gl/zaD2s47n5AN6C5sM8' },
           { id: 1002, time: '10:00', title: '北大マルシェCafé&Labo', type: 'food', note: '咖啡廳', mapUrl: 'https://maps.app.goo.gl/S3EsPCBjrAvXLNpS8' },
@@ -327,6 +409,8 @@ export class ItineraryComponent implements OnInit {
       },
       {
         dayId: 'S plan', date: 'shop', title: '購物其他清單',
+        areaSummary: '札幌市區 / 狸小路推薦購物清單',
+        mapQuery: '狸小路商店街 札幌',
         activities: [
           { id: 1101, time: '09:00', title: 'プロテイン専門店 エゾボリック 札幌大通店', type: 'spot', note: '運動營養補給品商店', mapUrl: 'https://maps.app.goo.gl/XTTy83AwoFB2AtZ37' },
           // { id: 1102, time: '10:00', title: '', type: 'spot', note: '', mapUrl: '' },
