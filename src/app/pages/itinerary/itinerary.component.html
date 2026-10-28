@@ -63,15 +63,14 @@
           </iframe>
         </div>
         <div class="mt-2 flex justify-between items-center text-[11px] text-slate-400 px-1 text-xs">
-          <span>💡 提示：雙指可在地圖內縮放與平移</span>
-          <button (click)="isMapExpanded = false" class="text-blue-500 hover:underline font-medium">收起地圖 ▴</button>
+          <!-- <button (click)="isMapExpanded = false" class="text-blue-500 hover:underline font-medium">收起地圖 ▴</button> -->
         </div>
       </div>
     </div>
 
     <h3 class="text-slate-800 font-bold text-lg mb-5 flex items-center justify-between">
       <span>🗓️ {{ currentDay?.title }}</span>
-      <button (click)="addActivity()" class="text-xs bg-blue-100 text-blue-600 px-3 py-1.5 rounded-full font-bold active:scale-95 transition-transform">＋ 新增</button>
+      <button (click)="addActivity()" class="whitespace-nowrap text-xs bg-blue-100 text-blue-600 px-3 py-1.5 rounded-full font-bold active:scale-95 transition-transform">＋ 新增</button>
     </h3>
 
     <!-- 加上 cdkDropList 與拖曳完成的事件綁定 -->
@@ -137,6 +136,15 @@
   </div>
 </div>
 
+<!-- 全局共用的警告彈窗 -->
+<app-confirm-modal
+  [isOpen]="modalConfig.isOpen"
+  [title]="modalConfig.title"
+  [message]="modalConfig.message"
+  [confirmText]="modalConfig.confirmText"
+  (cancel)="closeModal()"
+  (confirm)="executeModalAction()">
+</app-confirm-modal>
 <!-- ============================================== -->
 <!-- ⬇️ 編輯 / 詳細資訊 Bottom Sheet ⬇️ -->
 <!-- ============================================== -->

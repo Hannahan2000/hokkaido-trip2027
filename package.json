@@ -3,10 +3,10 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "NODE_OPTIONS=--openssl-legacy-provider ng serve --port 4201",
-    "build": "NODE_OPTIONS=--openssl-legacy-provider ng build",
-    "build_publish": "NODE_OPTIONS=--openssl-legacy-provider ng build --base-href=/hokkaido-trip2027/",
-    "watch": "NODE_OPTIONS=--openssl-legacy-provider ng build --watch --configuration development",
+    "start": "ng serve --port 4201",
+    "build": "ng build",
+    "build_publish": "ng build --base-href=/hokkaido-trip2027/",
+    "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test_on_phone": "npx angular-cli-ghpages --dir=dist/hokkaido-trip"
   },

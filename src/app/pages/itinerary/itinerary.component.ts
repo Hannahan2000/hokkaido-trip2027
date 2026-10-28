@@ -30,6 +30,15 @@ export interface DayPlan {
 export class ItineraryComponent implements OnInit {
   selectedDayId: number | string = 1;
   days: DayPlan[] = [];
+  showResetModal: boolean = false;
+  // 統一控管彈窗的所有狀態與文字
+  modalConfig = {
+    isOpen: false,
+    mode: '', // 用來記錄現在是要 'reset' 還是 'delete'
+    title: '',
+    message: '',
+    confirmText: ''
+  };
 
   // 地圖展開狀態 (方案 1)
   isMapExpanded = false;
@@ -73,7 +82,7 @@ export class ItineraryComponent implements OnInit {
     if (!day || !day.activities || day.activities.length === 0) return '';
     const validStops = day.activities
       .map(a => a.location ? `${a.location} ${a.title}` : a.title)
-      .filter(name => !name.includes('退房') && !name.includes('休息') && !name.includes('自由活動') && !name.includes('備案'));
+      .filter(name => !name.includes('退房') && !name.includes('休息') && !name.includes('自由活動') && !name.includes('備案') && !name.includes('起飛') && !name.includes('降落') && !name.includes('前往機場'));
 
     if (validStops.length === 0) return '';
     if (validStops.length === 1) {
@@ -107,22 +116,53 @@ export class ItineraryComponent implements OnInit {
     }
   }
 
-  // 還原預設行程
+  // 2. 觸發「還原行程」時，設定文字並打開彈窗
   resetToDefault() {
-    const isConfirm = confirm('確定要還原成預設行程嗎？\n這將會清除您所有的自訂修改與拖曳排序！');
-    if (isConfirm) {
+    this.modalConfig = {
+      isOpen: true,
+      mode: 'reset',
+      title: '確定要還原成預設行程嗎？',
+      message: '這將會清除您所有的自訂修改與拖曳排序',
+      confirmText: '還原'
+    };
+  }
+
+  // 3. 觸發「單筆刪除」時，設定文字並打開彈窗
+  deleteActivity() {
+    if (!this.editingAct || !this.currentDay) return;
+    this.modalConfig = {
+      isOpen: true,
+      mode: 'delete',
+      title: `確定要刪除「${this.editingAct.title}」嗎？`,
+      message: '刪除後將無法復原',
+      confirmText: '刪除'
+    };
+  }
+
+  // 4. 共用的關閉彈窗
+  closeModal() {
+    this.modalConfig.isOpen = false;
+  }
+
+  // 5. 統一的執行樞紐（看 mode 決定要執行哪件事）
+  executeModalAction() {
+    if (this.modalConfig.mode === 'reset') {
       localStorage.removeItem('hokkaido_itinerary');
       this.days = this.generateDefault9Days();
       this.saveData();
-      alert('已成功還原預設行程！');
+    } else if (this.modalConfig.mode === 'delete') {
+      if (this.editingAct && this.currentDay) {
+        this.currentDay.activities = this.currentDay.activities.filter(a => a.id !== this.editingAct!.id);
+        this.saveData();
+        this.closeSheet(); // 順便關閉編輯面板
+      }
     }
+    this.closeModal(); // 執行完關閉彈窗
   }
 
   drop(event: CdkDragDrop<Activity[]>) {
     if (this.currentDay) {
-      // 交換陣列元素位置
       moveItemInArray(this.currentDay.activities, event.previousIndex, event.currentIndex);
-      // 自動存檔，記住新的順序
       this.saveData();
     }
   }
@@ -189,21 +229,9 @@ export class ItineraryComponent implements OnInit {
     this.closeSheet();
   }
 
-  // 刪除行程
-  deleteActivity() {
-    if (!this.editingAct || !this.currentDay) return;
-    if (confirm(`確定要刪除「${this.editingAct.title}」嗎？`)) {
-      this.currentDay.activities = this.currentDay.activities.filter(a => a.id !== this.editingAct!.id);
-      this.saveData();
-      this.closeSheet();
-    }
-  }
-
-  // 🔴 1. 找到你原本用來「打開」編輯視窗的 Function (可能是 editActivity 或 openSheet)
+  // 🔴 1. 找到你原本用來「打開」編輯視窗的 Function
   openEditModal(activity: any): void {
-    this.editingAct = activity; // 第一步：先把資料塞進去，讓 *ngIf 把 HTML 節點產生出來
-
-    // 第二步：延遲 10 毫秒（等待畫面渲染），再觸發「往上滑」的動畫
+    this.editingAct = activity;
     setTimeout(() => {
       this.isSheetAnimating = true;
     }, 10);
@@ -211,9 +239,7 @@ export class ItineraryComponent implements OnInit {
 
   // 🔴 2. 修改你剛剛寫的關閉 Function
   closeSheet(): void {
-    this.isSheetAnimating = false; // 第一步：變更狀態，觸發「往下滑」的動畫
-
-    // 第二步：等待 300 毫秒（等 Tailwind 動畫播完），再真正把資料清空、拔除 HTML
+    this.isSheetAnimating = false;
     setTimeout(() => {
       this.editingAct = null;
     }, 300);
@@ -246,15 +272,18 @@ export class ItineraryComponent implements OnInit {
         areaSummary: '釜山 (西面/田浦) ✈️ 札幌市區 (薄野)',
         mapQuery: '札幌市 中央區',
         activities: [
-          { id: 98, time: '06:00', title: '抵達 釜山金海機場 (PUS)', type: 'flight', note: '看是否能寄放行李', transit: '搭車前往 西面站，地鐵約 40 分鐘' },
+          { id: 95, time: '00:40', title: '桃園機場第一航廈', type: 'spot', note: '最晚抵達時間', transit: '' },
+          { id: 96, time: '02:40', title: '起飛', type: 'flight', note: '', transit: '' },
+          { id: 98, time: '06:10', title: '釜山金海機場 (PUS)', type: 'flight', note: '看是否能寄放行李', transit: '抵達後，搭車前往 西面站，地鐵約 40 分鐘' },
           { id: 100, time: '08:00', title: '早餐：秀英本家豬肉湯飯', location: '西面', type: 'food', note: '推薦加入蝦醬和韭菜提味', transit: '步行', mapUrl: 'https://maps.app.goo.gl/FjqZYNpdVijKxHVF9' },
           { id: 101, time: '09:30', title: 'Olive Young 西面店', location: '西面', type: 'spot', note: '滿15000韓元可直接辦理現場退稅', transit: '步行', mapUrl: 'https://maps.app.goo.gl/gJqkYo1tpTXGVUiU8' },
           { id: 102, time: '11:00', title: '香水店：SCENTICA', location: '田浦', type: 'spot', note: '香水', transit: '', mapUrl: 'https://maps.app.goo.gl/xUWmeqGK8wbewKBb6' },
-          { id: 103, time: '11:20', title: '搭機前往札幌', type: 'taxi', transit: '搭車40分鐘，看是否搭計程車' },
-          { id: 104, time: '12:00', title: '抵達釜山機場，13:50的飛機', type: 'flight', transit: '飛行時間約 2.5 小時' },
-          { id: 105, time: '16:10', title: '抵達 新千歲機場 (CTS)', type: 'flight', transit: '步行至 B1 搭乘 JR' },
-          { id: 106, time: '17:30', title: '搭乘 JR 快速機場線', type: 'transport', transit: '1.機場快線車程約 45 分鐘/2230日幣 2.公車車程約75分鐘，每15分鐘一班/1500日幣' },
-          { id: 107, time: '18:30', title: '入住 Solaria Nishitetsu', location: '札幌站旁', type: 'hotel', transit: '放好行李後出發' },
+          { id: 103, time: '11:20', title: '前往機場', type: 'taxi', transit: '搭車40分鐘，看是否搭計程車' },
+          { id: 104, time: '11:50', title: '釜山金海機場 (PUS)', type: 'spot', transit: '' },
+          { id: 104, time: '13:50', title: '起飛', type: 'flight', transit: '飛行時間約 2.5 小時' },
+          { id: 105, time: '16:10', title: '新千歲機場 (CTS)', type: 'spot', transit: '步行至 B1 搭乘 JR' },
+          { id: 106, time: '17:30', title: 'JR 快速機場線/公車', type: 'transport', transit: '1.機場快線車程約 45 分鐘/2230日幣 2.公車車程約75分鐘，每15分鐘一班/1500日幣' },
+          { id: 107, time: '18:30', title: 'Solaria Nishitetsu', location: '札幌站旁', type: 'hotel', note:'入住飯店，放好行李後出發晚餐逛街', transit: '' },
           { id: 108, time: '19:00', title: '晚餐：湯咖哩 奧芝商店', location: '時計台店', type: 'food', note: '需現場排隊，時計台分店人潮較少', mapUrl: 'https://maps.app.goo.gl/zzx5RzmxH1rVmcB67' },
           { id: 109, time: '20:00', title: '弄頭髮/逛街', type: 'spot', note: '理髮/逛街', mapUrl: '' },
           { id: 110, time: '20:00', title: 'COCONO SUSUKINO', type: 'spot', note: '國王招牌拍照/可逛', mapUrl: 'https://maps.app.goo.gl/ho3HwnMdi1F6Huu28' },
@@ -324,15 +353,14 @@ export class ItineraryComponent implements OnInit {
         areaSummary: '洞爺湖 ➔ 登別地獄谷 ➔ 札幌市區大採購',
         mapQuery: '登別地獄谷',
         activities: [
-          { id: 501, time: '09:30', title: '飯店退房，前往 JR 洞爺站', type: 'hotel', note: '搭乘飯店接駁車或道南巴士前往 JR 車站。1.往登別再回市區/2.往市區' },
           { id: 502, time: '10:15', title: '--------登別備案----------搭乘 JR 特急北斗號 (往登別)', type: 'transport', transit: '車程約 40 分鐘' },
-          { id: 503, time: '11:00', title: '抵達 JR 登別站 (寄放行李)', type: 'spot', note: '車站內有大型置物櫃，放好行李後轉乘道南巴士前往溫泉街', transit: '巴士車程約 15 分鐘' },
+          { id: 503, time: '11:00', title: 'JR 登別站', type: 'spot', note: '車站內有大型置物櫃，放好行李後轉乘道南巴士前往溫泉街', transit: '巴士車程約 15 分鐘' },
           { id: 504, time: '11:30', title: '登別地獄谷散策', type: 'spot', note: '沿著木棧道欣賞壯觀的火山地熱與硫磺煙霧景觀' },
           { id: 505, time: '13:00', title: '午餐：登別溫泉街', type: 'food', note: '推薦「溫泉市場」吃海鮮，或品嚐當地特色的閻魔炒麵' },
           { id: 506, time: '14:30', title: '搭乘巴士返回 JR 登別站', type: 'transport', note: '記得取回置物櫃的大行李' },
           { id: 507, time: '15:20', title: '搭乘 JR 特急前往札幌', type: 'transport', transit: '車程約 1 小時 20 分鐘 (可在車上補眠)' },
           { id: 508, time: '17:00', title: '入住 格蘭貝爾札幌酒店', location: '札幌市區', type: 'hotel', transit: '放好行李稍作休息' },
-          { id: 509, time: '11:00', title: '--------逛街備案----------搭乘 JR 特急北斗號 (往札幌)', type: 'transport', transit: '車程約 1 小時 50 分鐘，直接回市區換取逛街時間' },
+          { id: 509, time: '09:30', title: '--------逛街備案----------搭乘接駁車', type: 'transport', transit: '車程約 1 小時 50 分鐘，直接回市區換取逛街時間' },
           { id: 510, time: '13:00', title: '抵達札幌，入住/寄放行李', location: '札幌市區', type: 'hotel', note: '放好行李準備大採購' },
           { id: 511, time: '13:30', title: '午餐：一夜干與海鮮丼 できたて屋', location: '時計台店', type: 'food', note: '白飯可免費續碗一次，推薦淋上高湯做成茶泡飯', mapUrl: 'https://maps.app.goo.gl/r6MbGd7quxXc2YHF9' },
           { id: 512, time: '14:30', title: '狸小路商店街 / 百貨商圈採買', type: 'spot', note: '提前把原本 Day 8 的購物行程移到這天下午，狸小路 6 丁目有香甜烤地瓜' },

@@ -1,0 +1,35 @@
+<div *ngIf="isOpen" class="fixed inset-0 z-[100] flex items-center justify-center px-4">
+  <!-- 半透明黑色背景 -->
+  <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
+
+  <!-- 彈窗本體 (加入 animate-fade-in 簡單動畫) -->
+  <div class="relative bg-white rounded-2xl w-full max-w-[280px] overflow-hidden shadow-2xl animate-fade-in">
+
+    <div class="p-6 text-center">
+      <div class="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-3">
+        <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        </svg>
+      </div>
+      <!-- 動態綁定標題與內容 -->
+      <h3 class="text-lg font-bold text-slate-800 mb-1">{{ title }}</h3>
+      <p class="text-xs text-slate-500 leading-relaxed" [innerHTML]="message"></p>
+    </div>
+
+    <!-- 底部按鈕區 -->
+    <div class="flex border-t border-slate-100">
+      <button
+        (click)="onCancel()"
+        class="flex-1 py-3.5 text-sm text-slate-500 font-medium hover:bg-slate-50 active:bg-slate-100 transition-colors">
+        {{ cancelText }}
+      </button>
+      <div class="w-[1px] bg-slate-100"></div>
+      <button
+        (click)="onConfirm()"
+        class="flex-1 py-3.5 text-sm text-red-500 font-bold hover:bg-red-50 active:bg-red-100 transition-colors">
+        {{ confirmText }}
+      </button>
+    </div>
+
+  </div>
+</div>

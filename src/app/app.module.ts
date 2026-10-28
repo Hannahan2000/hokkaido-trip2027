@@ -10,6 +10,7 @@ import { ChecklistComponent } from './pages/checklist/checklist.component';
 import { MemoComponent } from './pages/memo/memo.component';
 // 1. 引入 DragDropModule
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { ConfirmModalComponent } from './shared/confirm-modal/confirm-modal.component';
 
 @NgModule({
   declarations: [
@@ -18,7 +19,8 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
     HotelComponent,
     ItineraryComponent,
     ChecklistComponent,
-    MemoComponent
+    MemoComponent,
+    ConfirmModalComponent
   ],
   imports: [
     BrowserModule,
